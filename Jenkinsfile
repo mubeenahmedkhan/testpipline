@@ -6,6 +6,7 @@ pipeline {
             steps {
                 script {
                     docker.image('nginx:latest').pull()
+                    docker.image('nginx:latest').tag("my-nginx:${env.BUILD_NUMBER}")
                 }
             }
         }
@@ -13,7 +14,7 @@ pipeline {
         stage('Run Docker Container') {
             steps {
                 script {
-                    docker.image('nginx:latest').run('-p 8080:80', 'nginx')
+                    docker.image("my-nginx:${env.BUILD_NUMBER}").run('-p 8080:80', 'nginx')
                 }
             }
         }
@@ -21,7 +22,13 @@ pipeline {
         stage('Push Docker Image to GitHub') {
             steps {
                 script {
-                    docker.image('nginx:latest').push("${env.GITHUB_USER}/${env.JOB_NAME}:${env.BUILD_NUMBER}")
+                    def registryUrl = 'https://github.com/mubeenahmedkhan/testpipline.git' // GitHub Container Registry URL
+                    def imageTag = "my-nginx:${env.BUILD_NUMBER}"
+                    def credentialsId = 'mubeenahmedkhan'
+
+                    docker.withRegistry(registryUrl, credentialsId) {
+                        docker.image(imageTag).push()
+                    }
                 }
             }
         }
@@ -35,3 +42,4 @@ pipeline {
             echo 'Pipeline failed.'
         }
     }
+}
